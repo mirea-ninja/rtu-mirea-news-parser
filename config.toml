@@ -1,0 +1,9 @@
+[database]
+host="http://localhost"
+port="1337"
+news_route = "/newsses"
+strapi_jwt_token = "add your jwt from strapi"
+media_folder = "media"
+
+[project]
+url="https://www.mirea.ru"
