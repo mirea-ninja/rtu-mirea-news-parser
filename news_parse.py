@@ -1,28 +1,50 @@
+from typing import List, Optional
 from request_setting import Request
-from database import DB
+from database import NewsDB, Image, Session
 import time
-from app import config, logging
+from app import config, logging, os
 from datetime import datetime, date
+import os
+import requests
 
 
 class News():
-
-    def __init__(self) -> None:
+    def __init__(self, db: Session, http_session: requests.Session) -> None:
         self.start_url = config['project']['url']
-        html = Request.parse(self.start_url+'/news')
         self.place_media = config['database']['media_folder']
-        self.max_page = int(html.find(
-            'div', {'class': ['bx-pagination-container', 'row']}).find_all('li', {'class': ''})[-1].text)
+        self.db = db
+        self.http_session = http_session
 
-    def get_photo_property(self, url):
+    def get_max_pages(self) -> int:
+
+        # request
+        html = Request.parse(self.start_url+'/news', self.http_session)
+
+        max_page = int(html.find(
+            'div', {'class': ['bx-pagination-container', 'row']}).find_all('li', {'class': ''})[-1].text)
+        return max_page
+
+    def add_to_database(self, news: NewsDB, images: Optional[List[Image]]) -> None:
+        self.db.add(news)
+        news.images.extend(images)
+        self.db.commit()
+        # session been close auto
+
+    def get_photo_name(self, url: str) -> str:
         """Получаем свойство фотографии после её скачивания"""
 
-        file = Request.download_file(url, self.place_media+"/")
+        # request
+        file = Request.download_file(
+            url, self.place_media+"/", self.http_session)
 
-    def news_detail_parse(self, url):
-        """Парсинг страницы новости"""
+        return os.path.basename(file.name)
 
-        html = Request.parse(url)
+    def news_detail_parse(self, url: str) -> None:
+        """Парсинг детально одной новости"""
+
+        # request
+        html = Request.parse(url, self.http_session)
+
         news_block = html.find(
             'div', {'class': ['uk-grid-small', 'uk-grid', 'uk-grid-stack']})
         title = html.find('h1').text
@@ -30,19 +52,21 @@ class News():
         date_convert = datetime.strptime(date, " %d.%m.%Y").date()
         news_text = news_block.find(
             'div', {'class': ['news-item-text']}).text
-        images = [self.get_photo_property(self.start_url+image['href']) for image in news_block.find_all(
+        images = [self.get_photo_name(self.start_url+image['href']) for image in news_block.find_all(
             'a', {'data-fancybox': 'gallery'}, href=True)]
 
-        # Работает, но не обрабатывается images на стороне strapi!!!
-        # DB.add({'title': title, 'date': str(date_convert),
-        #        'text': news_text, 'images': ['a']})
+        # add to database
+        self.add_to_database(NewsDB(title=title, date=date_convert, text=news_text), [
+                             Image(name=name) for name in images])
 
         logging.info("SUCCESS Parse {}".format(title))
 
-    def news_page_parse(self, url):
-        """Парсинг страници с новостями"""
+    def news_page_parse(self, url) -> None:
+        """Парсинг страницы с новостями"""
 
-        html = Request.parse(url)
+        # request
+        html = Request.parse(url, self.http_session)
+
         news_bloc = html.find(
             'div', {'class': ['uk-grid-small', 'uk-grid', 'uk-grid-stack']})
 
@@ -55,12 +79,12 @@ class News():
             detail_page_url = news.find('a')['href']
             self.news_detail_parse(self.start_url + detail_page_url)
 
-    def start_parsing(self):
-        """Главный метод по запоску парсинга новостей"""
-
+    def start_parsing(self) -> None:
+        """Главный метод по запуску парсинга новостей"""
         start = time.time()
-        for i in range(1, self.max_page+1):
+        for i in range(1, self.get_max_pages()+1):
             self.news_page_parse(
                 '{}/news/?PAGEN_1={}'.format(self.start_url, i))
+
         logging.info(
             "PARSING IS STOP, Time need : {} Sec".format(time.time() - start))
