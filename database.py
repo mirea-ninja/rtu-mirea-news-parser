@@ -1,7 +1,7 @@
 """Работа со Strapi"""
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, relationship
-from app import config
+from main import config
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, Integer, Date, ForeignKey
 from fastapi import Depends

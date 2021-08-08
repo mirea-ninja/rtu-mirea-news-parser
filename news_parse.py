@@ -2,7 +2,7 @@ from typing import List, Optional
 from request_setting import Request
 from database import NewsDB, Image, Session
 import time
-from app import config, logging, os
+from main import config, logging, os
 from datetime import datetime, date
 import os
 import requests
