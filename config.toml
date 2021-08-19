@@ -4,4 +4,4 @@ url="sqlite:///database.db"
 
 [project]
 url="https://www.mirea.ru"
-host="http://localhost:8000"
+host="http://192.168.1.87:8000"

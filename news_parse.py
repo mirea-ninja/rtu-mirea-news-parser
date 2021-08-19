@@ -1,6 +1,6 @@
 from typing import List, Optional
 from request_setting import Request
-from database import NewsDB, Image, Session
+from database import NewsDB, Image, Session, Tag
 import time
 from main import config, logging, os
 from datetime import datetime, date
@@ -24,9 +24,10 @@ class News():
             'div', {'class': ['bx-pagination-container', 'row']}).find_all('li', {'class': ''})[-1].text)
         return max_page
 
-    def add_to_database(self, news: NewsDB, images: Optional[List[Image]]) -> None:
+    def add_to_database(self, news: NewsDB, images: Optional[List[Image]], tags: Optional[List[Image]]) -> None:
         self.db.add(news)
         news.images.extend(images)
+        news.tags.extend(tags)
         self.db.commit()
         # session been close auto
 
@@ -52,12 +53,13 @@ class News():
         date_convert = datetime.strptime(date, " %d.%m.%Y").date()
         news_text = news_block.find(
             'div', {'class': ['news-item-text']}).text
+        tags = [tag.text for tag in news_block.find(
+            'li', {'class': ['uk-display-inline-block']}).find_all('a')]
         images = [self.get_photo_name(self.start_url+image['href']) for image in news_block.find_all(
             'a', {'data-fancybox': 'gallery'}, href=True)]
-
         # add to database
         self.add_to_database(NewsDB(title=title, date=date_convert, text=news_text), [
-                             Image(name=name) for name in images])
+                             Image(name=name) for name in images], tags=Tag.Search(tags, self.db))
 
         logging.info("SUCCESS Parse {}".format(title))
 
