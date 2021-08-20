@@ -7,3 +7,4 @@ pydantic==1.8.2
 config
 markdownify
 SQLAlchemy==1.4.23
+toml
