@@ -8,3 +8,4 @@ config
 markdownify
 SQLAlchemy==1.4.23
 toml
+beautifulsoup4==4.9.3
