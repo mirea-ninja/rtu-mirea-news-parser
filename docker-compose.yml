@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  news_api:
+    build: ./
+    ports:
+    - 6000:6000
+    environment:
+    - API_KEY=
+  refresh_invoker:
+    build: ./refresh_invoker
