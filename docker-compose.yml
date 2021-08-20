@@ -4,7 +4,7 @@ services:
   news_api:
     build: ./
     ports:
-    - 6000:6000
+    - 5050:5050
     environment:
     - API_KEY=
   refresh_invoker:

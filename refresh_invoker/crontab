@@ -1,4 +1,4 @@
-10 * * * * root curl  --header "api-key: api_key_here" -X GET http://news_api:6000/news/start?secret= >> /var/log/cron.log 2>&1
+10 * * * * root curl  --header "api-key: api_key_here" -X GET http://news_api:5050/news/start?secret= >> /var/log/cron.log 2>&1
 # ┌───────────── minute (0 - 59)
 # │ ┌───────────── hour (0 - 23)
 # │ │ ┌───────────── day of the month (1 - 31)
