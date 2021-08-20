@@ -10,3 +10,4 @@ SQLAlchemy==1.4.23
 toml
 lxml
 orjson==3.6.3
+aiofiles
