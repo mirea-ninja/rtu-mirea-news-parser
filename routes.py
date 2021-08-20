@@ -2,12 +2,16 @@ import requests
 from main import app, config
 from database import NewsDB, Session, Tag, get_db, secondary_tag
 import news_parse
-
+import auth
 from models import NewsModel, News, TagModel, TagsModel
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import ORJSONResponse, FileResponse
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from request_setting import Request
+
+from fastapi.security import APIKeyHeader
+
+oauth2_scheme = APIKeyHeader(name="api-key")
 
 
 @app.get("/news", response_model=News, tags=["news"])
@@ -34,13 +38,18 @@ def get_news(db: Session = Depends(get_db)):
 
 
 @app.get("/news/start", tags=["news"])
-def start_news_parsing(db: Session = Depends(get_db),
+def start_news_parsing(db: Session = Depends(get_db), token=Depends(oauth2_scheme) if auth.check_environ() == True else None,
                        http_session: requests.Session = Depends(Request.start_session)):
     """Старт парсинг новостей"""
-
-    news = news_parse.News(db=db, http_session=http_session)
-    news.start_parsing()
-    return ORJSONResponse(content="Success")
+    if auth.access_api_key(token):
+        news = news_parse.News(db=db, http_session=http_session)
+        news.start_parsing()
+        return ORJSONResponse(content="Success")
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Incorrect api-key",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 @app.get("/photo/{image}", tags=["image"])

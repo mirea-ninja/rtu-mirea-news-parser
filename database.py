@@ -1,12 +1,10 @@
 """Работа со Strapi"""
-from re import search
 from typing import Optional
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, relationship
 from main import config
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, Integer, Date, ForeignKey, Table
-from fastapi import Depends
 
 engine = create_engine(config['database']['url'], connect_args={
                        "check_same_thread": False})
