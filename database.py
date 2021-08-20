@@ -52,7 +52,7 @@ class Tag(Base):
     name = Column(String(32))
 
     @staticmethod
-    def Search(tags_names: Optional[list[String]], db):
+    def search(tags_names: Optional[list[String]], db):
         """Получаем теги, но не создаём. Нужно подтвердить, если получили созданные теги"""
         tags = db.query(Tag).filter(Tag.name.in_(tags_names)).all()
         tags_name_found = [tag.name for tag in tags]

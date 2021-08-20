@@ -6,8 +6,6 @@ from fastapi import FastAPI
 
 config = toml.load('config.toml')
 app = FastAPI(title="NewsAPI")
-logging.basicConfig(filename='logs.log', level=logging.INFO,
-                    format='%(asctime)s:%(levelname)s:%(message)s')
 
 import routes
 

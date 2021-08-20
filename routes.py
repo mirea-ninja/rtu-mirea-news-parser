@@ -47,7 +47,7 @@ def start_news_parsing(db: Session = Depends(get_db),
 
 @app.get("/photo/{image}", tags=["image"])
 def get_photo(image: str):
-    return FileResponse(config['database']['media_folder']+"/"+image, media_type="image/png")
+    return FileResponse(config['database']['media_folder'] + "/" + image, media_type="image/png")
 
 
 @app.get("/tags", tags=['tags'], response_model=TagsModel)
