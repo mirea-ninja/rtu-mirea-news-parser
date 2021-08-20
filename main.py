@@ -1,5 +1,4 @@
 import uvicorn
-import logging
 import toml
 import os
 from fastapi import FastAPI

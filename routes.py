@@ -1,13 +1,11 @@
 import requests
-from starlette.responses import Response
-from main import app, config, logging
-from database import NewsDB, Image, Session, Tag, get_db, secondary_tag
+from main import app, config
+from database import NewsDB, Session, Tag, get_db, secondary_tag
 import news_parse
 
 from models import NewsModel, News, TagModel, TagsModel
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import ORJSONResponse, FileResponse
-from typing import List
 from fastapi import Depends
 from request_setting import Request
 

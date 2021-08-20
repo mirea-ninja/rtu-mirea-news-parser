@@ -3,8 +3,8 @@ from typing import List, Optional
 from request_setting import Request
 from database import NewsDB, Image, Session, Tag, secondary_tag
 import time
-from main import config, logging, os
-from datetime import datetime, date
+from main import config, os
+from datetime import datetime
 import os
 import requests
 from markdownify import markdownify as md
