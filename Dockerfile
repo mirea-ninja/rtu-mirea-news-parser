@@ -1,4 +1,4 @@
-FROM tiangolo/meinheld-gunicorn-flask:python3.8
+FROM python:buster
 
 WORKDIR /app
 RUN pip install --upgrade pip
