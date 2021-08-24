@@ -20,7 +20,7 @@ def get_news(tag: str = 'все', limit: int = 10, offset: int = 0, db: Session 
        Сортировка по дате. (desc)
     """
     filter_tag = None == None if tag == 'все' else Tag.name == tag
-    results = db.query(NewsDB).select_from(NewsDB).filter(filter_tag).limit(limit).offset(offset).all()
+    results = db.query(NewsDB).select_from(NewsDB).filter(filter_tag).order_by(NewsDB.date.desc()).limit(limit).offset(offset).all()
     
     list_models = [NewsModel.from_orm(model) for model in results]
     for model in list_models:
