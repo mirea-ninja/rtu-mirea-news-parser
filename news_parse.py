@@ -17,20 +17,17 @@ class News():
         self.db = db
         self.http_session = http_session
 
-        results = db.query(NewsDB).select_from(NewsDB).order_by(NewsDB.date.desc()).offset(0).limit(1).all()
-        if len(results) > 0:
-            self.latest_news_item = NewsModel.from_orm(results[0])
-        else:
-            self.latest_news_item = None
+        result = db.query(NewsDB).order_by(NewsDB.date.desc()).first()
+        self.latest_news_item = result
 
     def __get_max_pages(self) -> int:
         html = Request.parse(self.start_url+'/news', self.http_session)
 
         max_page = int(html.find(
             'div', {'class': ['bx-pagination-container', 'row']}).find_all('li', {'class': ''})[-1].text)
-        
+
         max_page = 15 if max_page > 15 else max_page
-            
+
         return max_page
 
     def __add_to_database(self, news: NewsDB, images: Optional[List[Image]], tags: Optional[List[Image]]) -> None:
@@ -59,20 +56,18 @@ class News():
         date = html.find('div', {'class': ["uk-margin-bottom"]}).text
         date_converted = datetime.strptime(date, " %d.%m.%Y").date()
 
-
         news_text = md(str(news_block.find(
             'div', {'class': ['news-item-text']})))
-        
+
         tags = [tag.text for tag in news_block.find(
             'li', {'class': ['uk-display-inline-block']}).find_all('a')]
-        
+
         images = [self.__get_photo_name(self.start_url+image['href']) for image in news_block.find_all(
             'a', {'data-fancybox': 'gallery'}, href=True)]
-        
-        print("SUCCESS Parse {}".format(title))
-        
-        return title, date_converted, news_text, [Image(name=name) for name in images], Tag.search(tags, self.db)
 
+        print("SUCCESS Parse {}".format(title))
+
+        return title, date_converted, news_text, [Image(name=name) for name in images], Tag.search(tags, self.db)
 
     def __news_page_parse(self, url) -> bool:
         """Парсинг страницы с новостями возвращает значение stop -
@@ -90,16 +85,19 @@ class News():
         # Парсим каждую найденую новость
         for news in list_news:
             detail_page_url = news.find('a')['href']
-            title, date, text, images, tags = self.__news_detail_parse(self.start_url + detail_page_url)
+            title, date, text, images, tags = self.__news_detail_parse(
+                self.start_url + detail_page_url)
             if self.latest_news_item is not None:
                 stop = title == self.latest_news_item.title and date == self.latest_news_item.date
                 if stop is False:
-                    self.__add_to_database(NewsDB(title=title, date=date, text=text), images, tags=tags)
+                    self.__add_to_database(
+                        NewsDB(title=title, date=date, text=text), images, tags=tags)
                 else:
                     return True
             else:
-                self.__add_to_database(NewsDB(title=title, date=date, text=text), images, tags=tags)
-            
+                self.__add_to_database(
+                    NewsDB(title=title, date=date, text=text), images, tags=tags)
+
         return False
 
     def start_parsing(self) -> None:
@@ -108,7 +106,7 @@ class News():
         for i in range(1, self.__get_max_pages() + 1):
             print('Pargsin page ' + str(i))
             if self.__news_page_parse(
-                '{}/news/?PAGEN_1={}'.format(self.start_url, i)):
+                    '{}/news/?PAGEN_1={}'.format(self.start_url, i)):
                 break
 
         print(
