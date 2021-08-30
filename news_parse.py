@@ -8,6 +8,7 @@ from datetime import datetime
 import os
 import requests
 from markdownify import markdownify as md
+import difflib
 
 
 class News():
@@ -88,7 +89,10 @@ class News():
             title, date, text, images, tags = self.__news_detail_parse(
                 self.start_url + detail_page_url)
             if self.latest_news_item is not None:
-                stop = title == self.latest_news_item.title and date == self.latest_news_item.date
+                normalized1 = self.latest_news_item.title.lower()
+                normalized2 = title.lower()
+                matcher = difflib.SequenceMatcher(None, normalized1, normalized2)
+                stop = matcher.ratio() < 0.92 and date == self.latest_news_item.date
                 if stop is False:
                     self.__add_to_database(
                         NewsDB(title=title, date=date, text=text), images, tags=tags)
