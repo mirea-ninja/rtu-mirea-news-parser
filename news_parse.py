@@ -91,8 +91,9 @@ class News():
             if self.latest_news_item is not None:
                 normalized1 = self.latest_news_item.title.lower()
                 normalized2 = title.lower()
-                matcher = difflib.SequenceMatcher(None, normalized1, normalized2)
-                stop = matcher.ratio() < 0.92 and date == self.latest_news_item.date
+                matcher = difflib.SequenceMatcher(
+                    None, normalized1, normalized2)
+                stop = matcher.ratio() > 0.92 and date == self.latest_news_item.date
                 if stop is False:
                     self.__add_to_database(
                         NewsDB(title=title, date=date, text=text), images, tags=tags)
