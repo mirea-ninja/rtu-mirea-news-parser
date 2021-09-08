@@ -18,8 +18,8 @@ class News():
         self.db = db
         self.http_session = http_session
 
-        result = db.query(NewsDB).order_by(NewsDB.date.desc()).first()
-        self.latest_news_item = result
+        # This is flag for first downloads news
+        self.have_news = db.query(NewsDB).first()
 
     def __get_max_pages(self) -> int:
         html = Request.parse(self.start_url+'/news', self.http_session)
@@ -71,9 +71,9 @@ class News():
         return title, date_converted, news_text, [Image(name=name) for name in images], Tag.search(tags, self.db)
 
     def __news_page_parse(self, url) -> bool:
-        """Парсинг страницы с новостями возвращает значение stop -
-        True, если парсинг следует остановить и False, если продолжить
-        """
+        """Парсинг страницы с новостями. stop -
+        bool массив, в котором ведётся поиск одинаковых новостей, 
+        если парсинг следует остановить возвращаем True."""
         html = Request.parse(url, self.http_session)
 
         news_bloc = html.find(
@@ -86,20 +86,29 @@ class News():
         # Парсим каждую найденую новость
         for news in list_news:
             detail_page_url = news.find('a')['href']
+
+            # Этот флаг для защиты от одинаковых новостей.
+            download = True
             title, date, text, images, tags = self.__news_detail_parse(
                 self.start_url + detail_page_url)
-            if self.latest_news_item is not None:
-                normalized1 = self.latest_news_item.title.lower()
-                normalized2 = title.lower()
-                matcher = difflib.SequenceMatcher(
-                    None, normalized1, normalized2)
-                stop = matcher.ratio() > 0.92 and date == self.latest_news_item.date
-                if stop is False:
-                    self.__add_to_database(
-                        NewsDB(title=title, date=date, text=text), images, tags=tags)
-                else:
+            news_on_this_day = self.db.query(
+                NewsDB).filter(NewsDB.date == date).all()
+            if len(news_on_this_day) > 0:
+                list_matchers = [difflib.SequenceMatcher(
+                    None, news.title.lower(), title.lower()) for news in news_on_this_day]
+                stop = [match.ratio() > 0.91 for match in list_matchers]
+                if True in stop and self.have_news != None:
+
+                    # Флаг donwnload можно не ставить, мы сразу выходим из цикла.
+                    # И завершаем парсинг полностью
                     return True
-            else:
+
+                # Если при первом парсинге новостей одинаковые новости.
+                # Имеется ввиду ошибка mirea.ru, то новость не будет скачена.
+                elif True in stop and self.have_news == None:
+                    download = False
+
+            if download:
                 self.__add_to_database(
                     NewsDB(title=title, date=date, text=text), images, tags=tags)
 
