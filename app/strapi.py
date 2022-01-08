@@ -1,5 +1,4 @@
 import requests
-from config import Settings
 
 
 class Strapi:
@@ -34,13 +33,13 @@ class Strapi:
 
     def create_news(self, title: str, text: str, is_important: bool, tags_id: list, date: str, images: list):
         payload = {'data': {'isImportant': is_important, 'title': title,
-                       'text': text, 'date': date, 'tags': tags_id}}
+                            'text': text, 'date': date, 'tags': tags_id}}
+
         if len(images) != 0:
-            payload.update({'images': [image['id'] for image in images]})
-            print(payload)
+            payload['data'] |= {'images': images}
 
         requests.post(self.api_url + 'announcements',
-                    headers=self.headers, json=payload)
+                      headers=self.headers, json=payload)
 
     def upload(self, file_name: str, file_path: str):
         files = {'files': (file_name, open(
