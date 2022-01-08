@@ -1,7 +1,0 @@
-[database]
-media_folder = "media"
-url="sqlite:///database.db"
-
-[project]
-url="https://www.mirea.ru"
-host="http://127.0.0.1:5050"

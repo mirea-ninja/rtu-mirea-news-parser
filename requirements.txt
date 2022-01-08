@@ -1,13 +1,8 @@
 requests
+config
+schedule
+lxml
 beautifulsoup4==4.9.3
 urllib3==1.26.6
-uvicorn==0.14.0
-fastapi==0.66.0
 pydantic==1.8.2
-config
-markdownify
-SQLAlchemy==1.4.23
-toml
-lxml
-orjson==3.6.3
-aiofiles
+markdownify==0.10.1
