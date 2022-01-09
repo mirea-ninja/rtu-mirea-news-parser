@@ -7,9 +7,9 @@ class Strapi:
         self.headers = {'accept': 'application/json',
                         'Authorization': 'Bearer ' + api_token}
 
-    def get_news(self):
+    def get_news(self, is_important: bool):
         response = requests.get(
-            self.api_url + 'announcements', headers=self.headers).json()
+            self.api_url + 'announcements?filters[isImportant][$eq]={}&sort=date:DESC'.format(str(is_important).lower()), headers=self.headers).json()
         if 'error' in response:
             return []
         return response['data']

@@ -1,40 +1,12 @@
-import os
-import requests
 import difflib
-import secrets
 import time
-import re
-from config import get_settings
-from strapi import Strapi
-from bs4 import BeautifulSoup as bs4
 from datetime import datetime
-from markdownify import markdownify as md
+from mirea_parser import MireaParser
 
 
-class NewsParser():
-    def __init__(self):
-        self.mirea_url = 'https://mirea.ru/'
-        self.requests_session = requests.Session()
-        self.strapi = Strapi(get_settings().api_url, get_settings().api_token)
-
-    def __text_normalize(self, text: str) -> str:
-        return re.sub(r'^ ', '', text, flags=re.MULTILINE)
-
-    def __download_image(self, url: str):
-        response = self.requests_session.get(url)
-        if not os.path.exists('images'):
-            os.makedirs('images')
-        with open('images/' + secrets.token_hex(nbytes=16) + os.path.splitext(url)[1], 'wb') as file_image:
-            file_image.write(response.content)
-        return file_image
-
-    def __get_html(self, url: str) -> bs4:
-        response_text = self.requests_session.get(url).text
-        html = bs4(response_text, 'lxml')
-        return html
-
+class NewsParser(MireaParser):
     def __get_last_page_num(self) -> int:
-        html = self.__get_html(self.mirea_url + '/news')
+        html = self._get_html(self.mirea_url + '/news')
 
         last_page_num = int(html.find(
             'div', {'class': ['bx-pagination-container', 'row']}).find_all('li', {'class': ''})[-1].text)
@@ -44,13 +16,8 @@ class NewsParser():
 
         return last_page_num
 
-    def __get_image(self, url: str) -> str:
-        image = self.__download_image(url)
-
-        return os.path.basename(image.name)
-
     def __get_news_details(self, url: str):
-        html = self.__get_html(url)
+        html = self._get_html(url)
 
         news_block = html.find(
             'div', {'class': ['uk-grid-small', 'uk-grid', 'uk-grid-stack']})
@@ -61,28 +28,32 @@ class NewsParser():
         news_text = str(news_block.find(
             'div', {'class': ['news-item-text']}))
 
-        tags = [tag.text for tag in news_block.find(
-            'li', {'class': ['uk-display-inline-block']}).find_all('a')]
+        tags_inline_block = news_block.find(
+            'li', {'class': ['uk-display-inline-block']})
 
-        images = [self.__get_image(self.mirea_url + image['href']) for image in news_block.find_all(
+        if tags_inline_block is not None:
+            tags = [tag.text for tag in tags_inline_block.find_all('a')]
+        else:
+            tags = []
+
+        images = [self._get_image(self.mirea_url + image['href']) for image in news_block.find_all(
             'a', {'data-fancybox': 'gallery'}, href=True)]
 
         print("SUCCESS Parse {}".format(title))
 
-        return title, date_converted, self.__text_normalize(news_text), images, tags
+        return title, date_converted, self._text_normalize(news_text), images, tags
 
-    def __news_page_parse(self, url) -> bool:
+    def __news_page_parse(self, url: str, is_ads_page: bool) -> bool:
         """Парсинг страницы с новостями. stop -
         bool массив, в котором ведётся поиск одинаковых новостей, 
         если парсинг следует остановить возвращаем True."""
-        html = self.__get_html(url)
+        html = self._get_html(url)
 
         news_bloc = html.find(
             'div', {'class': ['uk-grid-small', 'uk-grid', 'uk-grid-stack']})
 
-        # Получение новостей на странице /news=?PAGE=1 и ...
         list_news = news_bloc.find_all(
-            'div', class_='uk-width-1-2@m uk-width-1-3@l uk-margin-bottom')
+            'div', class_='uk-width-1-2@m uk-width-1-3@l uk-margin-bottom' if is_ads_page is False else 'uk-width-1-3@m uk-width-1-4@l uk-margin-bottom')
 
         # Парсим каждую найденую новость
         for news in list_news:
@@ -91,7 +62,7 @@ class NewsParser():
             title, date, text, images, tags = self.__get_news_details(
                 self.mirea_url + detail_page_url)
 
-            latest_news = self.strapi.get_news()
+            latest_news = self._strapi.get_news(is_ads_page)
 
             if len(latest_news) > 0:
                 list_matchers = [difflib.SequenceMatcher(
@@ -105,25 +76,33 @@ class NewsParser():
             response_images = []
             response_tags = []
             for image in images:
-                response_image = self.strapi.upload(image, 'images/' + image)
+                response_image = self._strapi.upload(image, 'images/' + image)
                 if response_image is not None:
                     response_images.append(response_image)
-                    
+
             for tag in tags:
-                response_tag = self.strapi.add_tag(tag)
+                response_tag = self._strapi.add_tag(tag)
                 response_tags.append(response_tag)
-            
-            self.strapi.create_news(title, text, False, response_tags, date.isoformat(), response_images)
+
+            is_important = is_ads_page
+            self._strapi.create_news(
+                title, text, is_important, response_tags, date.isoformat(), response_images)
 
         return False
 
     def run(self) -> None:
         start = time.time()
+
+        # парсинг первых 15 страниц новостей
         for i in range(1, self.__get_last_page_num() + 1):
-            print('Pargsin page ' + str(i))
+            print('Pargsin news page ' + str(i))
             if self.__news_page_parse(
-                    '{}/news/?PAGEN_1={}'.format(self.mirea_url, i)):
+                    '{}/news/?PAGEN_1={}'.format(self.mirea_url, i), False):
                 break
+
+        # парсинг объявлений со страницы "Важное"
+        print('Pargsin ads page')
+        self.__news_page_parse(self.mirea_url + '/ads/', True)
 
         print(
             "Done! The parser stopped after {}sec".format(time.time() - start))
