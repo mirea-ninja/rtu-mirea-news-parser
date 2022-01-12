@@ -1,10 +1,21 @@
 import difflib
 import time
+import os
 from datetime import datetime
 from mirea_parser import MireaParser
 
 
 class NewsParser(MireaParser):
+    def __clear_images(self):
+        folder = 'images'
+        for the_file in os.listdir('images'):
+            file_path = os.path.join(folder, the_file)
+            try:
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                print(e)
+                
     def __get_last_page_num(self) -> int:
         html = self._get_html(self.mirea_url + '/news')
 
@@ -39,14 +50,10 @@ class NewsParser(MireaParser):
         images = [self._get_image(self.mirea_url + image['href']) for image in news_block.find_all(
             'a', {'data-fancybox': 'gallery'}, href=True)]
 
-        print("SUCCESS Parse {}".format(title))
-
         return title, date_converted, self._text_normalize(news_text), images, tags
 
     def __news_page_parse(self, url: str, is_ads_page: bool) -> bool:
-        """Парсинг страницы с новостями. stop -
-        bool массив, в котором ведётся поиск одинаковых новостей, 
-        если парсинг следует остановить возвращаем True."""
+        """Парсинг страницы с новостями и страниц с важными новостями."""
         html = self._get_html(url)
 
         news_bloc = html.find(
@@ -55,7 +62,6 @@ class NewsParser(MireaParser):
         list_news = news_bloc.find_all(
             'div', class_='uk-width-1-2@m uk-width-1-3@l uk-margin-bottom' if is_ads_page is False else 'uk-width-1-3@m uk-width-1-4@l uk-margin-bottom')
 
-        # Парсим каждую найденую новость
         for news in list_news:
             detail_page_url = news.find('a')['href']
 
@@ -66,9 +72,11 @@ class NewsParser(MireaParser):
 
             if len(latest_news) > 0:
                 list_matchers = [difflib.SequenceMatcher(
-                    None, news['attributes']['text'], text.lower()) for news in latest_news]
+                    None, news['attributes']['text'].lower(), text.lower()) for news in latest_news]
 
-                stop = [match.ratio() > 0.91 for match in list_matchers]
+                # если в списке есть новости с почти одинаковым содержимым, то парсинг
+                # следует остановить
+                stop = [match.ratio() for match in list_matchers]
 
                 if True in stop:
                     return True
@@ -87,12 +95,16 @@ class NewsParser(MireaParser):
             is_important = is_ads_page
             self._strapi.create_news(
                 title, text, is_important, response_tags, date.isoformat(), response_images)
-
+            
+            print("Successfully created \"{}\"".format(title))
+            
         return False
 
     def run(self) -> None:
         start = time.time()
 
+        self.__clear_images()
+        
         # парсинг первых 15 страниц новостей
         for i in range(1, self.__get_last_page_num() + 1):
             print('Pargsin news page ' + str(i))

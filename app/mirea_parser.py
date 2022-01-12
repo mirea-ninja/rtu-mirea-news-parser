@@ -2,17 +2,16 @@ import os
 import requests
 import secrets
 import re
-from config import get_settings
 from strapi import Strapi
 from bs4 import BeautifulSoup as bs4
 from abc import abstractmethod
 
 
 class MireaParser():
-    def __init__(self):
+    def __init__(self, api_url: str, api_token: str):
         self.mirea_url = 'https://mirea.ru/'
         self._requests_session = requests.Session()
-        self._strapi = Strapi(get_settings().api_url, get_settings().api_token)
+        self._strapi = Strapi(api_url, api_token)
 
     def _text_normalize(self, text: str) -> str:
         return re.sub(r'^ ', '', text, flags=re.MULTILINE)
