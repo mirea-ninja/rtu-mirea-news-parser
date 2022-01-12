@@ -2,7 +2,9 @@ requests
 config
 schedule
 lxml
+python-dotenv==0.19.2
 beautifulsoup4==4.9.3
 urllib3==1.26.6
 pydantic==1.8.2
 markdownify==0.10.1
+sentry-sdk==1.5.2

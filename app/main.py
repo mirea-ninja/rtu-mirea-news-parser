@@ -3,7 +3,6 @@ import time
 import sentry_sdk
 from news_parser import NewsParser
 from config import get_settings
-from strapi import Strapi
 
 
 def parse(api_url: str, api_token: str):
