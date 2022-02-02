@@ -18,7 +18,7 @@ class Strapi:
             list: список новостей или пустой список при ошибке или если новостей нет
         """
         request_url = self.api_url + \
-            'announcements?filters[isImportant][$eq]={}&sort=date:DESC'.format(
+            'announcements?filters[isImportant][$eq]={}&sort=date:DESC&pagination[pageSize]=50'.format(
                 str(is_important).lower())
         response = requests.get(request_url, headers=self.headers).json()
         if 'error' in response:
