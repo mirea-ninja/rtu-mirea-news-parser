@@ -8,13 +8,14 @@ from mirea_parser import MireaParser
 class NewsParser(MireaParser):
     def __clear_images(self):
         folder = 'images'
-        for the_file in os.listdir('images'):
-            file_path = os.path.join(folder, the_file)
-            try:
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-            except Exception as e:
-                print(e)
+        if os.path.isdir('new_folder'):
+            for the_file in os.listdir(folder):
+                file_path = os.path.join(folder, the_file)
+                try:
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                except Exception as e:
+                    print(e)
                 
     def __get_last_page_num(self) -> int:
         html = self._get_html(self.mirea_url + '/news')
