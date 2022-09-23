@@ -28,7 +28,7 @@ class MireaParser():
         response = self._requests_session.get(url)
         if not os.path.exists('images'):
             os.makedirs('images')
-        with open('images/' + secrets.token_hex(nbytes=16) + os.path.splitext(url)[1], 'wb') as file_image:
+        with open(f'images/{secrets.token_hex(nbytes=16)}{os.path.splitext(url)[1]}', 'wb') as file_image:
             file_image.write(response.content)
         return file_image
 
@@ -39,8 +39,7 @@ class MireaParser():
             url (str): ссылка на страницу
         """
         response_text = self._requests_session.get(url).text
-        html = bs4(response_text, 'lxml')
-        return html
+        return bs4(response_text, 'lxml')
 
     def _get_image(self, url: str) -> str:
         image = self._download_image(url)

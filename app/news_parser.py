@@ -7,8 +7,8 @@ from mirea_parser import MireaParser
 
 class NewsParser(MireaParser):
     def __clear_images(self):
-        folder = 'images'
         if os.path.isdir('new_folder'):
+            folder = 'images'
             for the_file in os.listdir(folder):
                 file_path = os.path.join(folder, the_file)
                 try:
@@ -18,13 +18,13 @@ class NewsParser(MireaParser):
                     print(e)
                 
     def __get_last_page_num(self) -> int:
-        html = self._get_html(self.mirea_url + '/news')
+        html = self._get_html(f'{self.mirea_url}/news')
 
         last_page_num = int(html.find(
             'div', {'class': ['bx-pagination-container', 'row']}).find_all('li', {'class': ''})[-1].text)
 
         # Парсим только первые 15 страниц, иначе парсинг очень долгий
-        last_page_num = 15 if last_page_num > 15 else last_page_num
+        last_page_num = min(last_page_num, 15)
 
         return last_page_num
 
@@ -61,8 +61,14 @@ class NewsParser(MireaParser):
             'div', {'class': ['uk-grid-small', 'uk-grid', 'uk-grid-stack']})
 
         list_news = news_bloc.find_all(
-            'div', class_='uk-width-1-2@m uk-width-1-3@l uk-margin-bottom' if is_ads_page is False else 'uk-width-1-3@m uk-width-1-4@l uk-margin-bottom')
+            'div',
+            class_='uk-width-1-3@m uk-width-1-4@l uk-margin-bottom'
+            if is_ads_page
+            else 'uk-width-1-2@m uk-width-1-3@l uk-margin-bottom',
+        )
 
+
+        is_important = is_ads_page
         for news in list_news:
             detail_page_url = news.find('a')['href']
 
@@ -85,7 +91,7 @@ class NewsParser(MireaParser):
             response_images = []
             response_tags = []
             for image in images:
-                response_image = self._strapi.upload(image, 'images/' + image)
+                response_image = self._strapi.upload(image, f'images/{image}')
                 if response_image is not None:
                     response_images.append(response_image)
 
@@ -93,29 +99,28 @@ class NewsParser(MireaParser):
                 response_tag = self._strapi.add_tag(tag)
                 response_tags.append(response_tag)
 
-            is_important = is_ads_page
             self._strapi.create_news(
                 title, text, is_important, response_tags, date.isoformat(), response_images)
-            
-            print("Successfully created \"{}\"".format(title))
-            
+
+            print(f'Successfully created \"{title}\"')
+
         return False
 
     def run(self) -> None:
         start = time.time()
 
         self.__clear_images()
-        
+
         # парсинг первых 15 страниц новостей
         for i in range(1, self.__get_last_page_num() + 1):
-            print('Pargsin news page ' + str(i))
+            print(f'Pargsin news page {str(i)}')
             if self.__news_page_parse(
-                    '{}/news/?PAGEN_1={}'.format(self.mirea_url, i), False):
+                f'{self.mirea_url}/news/?PAGEN_1={i}', False
+            ):
                 break
 
         # парсинг объявлений со страницы "Важное"
         print('Pargsin ads page')
-        self.__news_page_parse(self.mirea_url + '/ads/', True)
+        self.__news_page_parse(f'{self.mirea_url}/ads/', True)
 
-        print(
-            "Done! The parser stopped after {}sec".format(time.time() - start))
+        print(f"Done! The parser stopped after {time.time() - start}sec")

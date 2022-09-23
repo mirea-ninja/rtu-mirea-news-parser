@@ -4,8 +4,10 @@ import requests
 class Strapi:
     def __init__(self, api_url: str, api_token: str):
         self.api_url = api_url
-        self.headers = {'accept': 'application/json',
-                        'Authorization': 'Bearer ' + api_token}
+        self.headers = {
+            'accept': 'application/json',
+            'Authorization': f'Bearer {api_token}',
+        }
 
     def get_news(self, is_important: bool):
         """Получить список последних 25-и новостей, отсортированных по 
@@ -17,13 +19,10 @@ class Strapi:
         Returns:
             list: список новостей или пустой список при ошибке или если новостей нет
         """
-        request_url = self.api_url + \
-            'announcements?filters[isImportant][$eq]={}&sort=date:DESC&pagination[pageSize]=50'.format(
-                str(is_important).lower())
+        request_url = f'{self.api_url}announcements?filters[isImportant][$eq]={str(is_important).lower()}&sort=date:DESC&pagination[pageSize]=50'
+
         response = requests.get(request_url, headers=self.headers).json()
-        if 'error' in response:
-            return []
-        return response['data']
+        return [] if 'error' in response else response['data']
 
     def search_tag(self, tag: str) -> (int | None):
         """Получить id тега по названию
@@ -34,11 +33,9 @@ class Strapi:
         Returns:
             (int | None): id тега или None, если тег не найден
         """
-        request_url = self.api_url + 'tags?filters[name][$eq]=' + tag
+        request_url = f'{self.api_url}tags?filters[name][$eq]={tag}'
         response = requests.get(request_url, headers=self.headers).json()
-        if 'error' not in response:
-            return response['data'][0]['id']
-        return None
+        return response['data'][0]['id'] if 'error' not in response else None
 
     def add_tag(self, tag: str):
         """Добавить новый тег
@@ -52,7 +49,9 @@ class Strapi:
         """
         payload = {'data': {'name': tag}}
         response = requests.post(
-            self.api_url + 'tags', headers=self.headers, json=payload).json()
+            f'{self.api_url}tags', headers=self.headers, json=payload
+        ).json()
+
 
         if response['data'] is not None:
             return response['data']['id']
@@ -75,19 +74,19 @@ class Strapi:
         payload = {'data': {'isImportant': is_important, 'title': title,
                             'text': text, 'date': date, 'tags': tags_id}}
 
-        if len(images) != 0:
+        if images:
             payload['data'] |= {'images': [image["id"] for image in images]}
 
-        requests.post(self.api_url + 'announcements',
-                      headers=self.headers, json=payload)
+        requests.post(
+            f'{self.api_url}announcements', headers=self.headers, json=payload
+        )
 
     def upload(self, file_name: str, file_path: str):
         files = {'files': (file_name, open(
             file_path, 'rb'), 'image', {'uri': ''})}
         response = requests.post(
-            self.api_url + 'upload', headers=self.headers, files=files).json()
+            f'{self.api_url}upload', headers=self.headers, files=files
+        ).json()
 
-        if len(response) > 0:
-            if 'id' in response[0]:
-                return response[0]
-        return None
+
+        return response[0] if len(response) > 0 and 'id' in response[0] else None
