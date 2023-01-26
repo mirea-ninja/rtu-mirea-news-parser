@@ -1,12 +1,10 @@
 FROM python:buster
 
-WORKDIR /app
-
-COPY requirements.txt ./
+COPY / .
 
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-COPY . .
+WORKDIR /app
 
 CMD ["python", "-u", "main.py"]
