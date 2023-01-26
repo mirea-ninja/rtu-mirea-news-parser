@@ -1,17 +1,16 @@
-import os
 from functools import lru_cache
-from dotenv import load_dotenv
+
+from pydantic import AnyHttpUrl, BaseSettings, Field
 
 
-load_dotenv(".env")
+class Config(BaseSettings):
+    API_URL: AnyHttpUrl = Field(..., env="API_URL")
+    API_TOKEN: str = Field(..., env="API_TOKEN")
+
+    class Config:
+        env_file = "../.env"
 
 
-class Settings:
-    api_url: str = os.getenv("API_URL", "https://cms.mirea.ninja/api/")
-    api_token: str = os.getenv("API_TOKEN", "")
-    sentry_dsn: str = os.getenv("SENTRY_DSN", "")
-
-
-@lru_cache
-def get_settings() -> Settings:
-    return Settings()
+@lru_cache()
+def get_settings() -> Config:
+    return Config()

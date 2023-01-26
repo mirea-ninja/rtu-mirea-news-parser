@@ -1,20 +1,28 @@
 import os
-import requests
-import secrets
 import re
-from strapi import Strapi
-from bs4 import BeautifulSoup as bs4
+import secrets
 from abc import abstractmethod
 
+import requests
+from bs4 import BeautifulSoup as bs4
+from strapi import Strapi
 
-class MireaParser():
+
+class MireaParser:
+    MIREA_URL = "https://mirea.ru"
+
     def __init__(self, api_url: str, api_token: str):
-        self.mirea_url = 'https://mirea.ru/'
         self._requests_session = requests.Session()
         self._strapi = Strapi(api_url, api_token)
 
     def _text_normalize(self, text: str) -> str:
-        return re.sub(r'^ ', '', text, flags=re.MULTILINE)
+        text = text.strip()
+        text = re.sub(r"^ ", "", text, flags=re.MULTILINE)
+
+        text = re.sub(r"<div.*?>", "", text, flags=re.MULTILINE)
+        text = re.sub(r"</div>", "", text, flags=re.MULTILINE)
+
+        return text
 
     def _download_image(self, url: str):
         """Скачать изображение в папку '/images'
@@ -26,9 +34,11 @@ class MireaParser():
             BufferedWriter: файл, открытый для записи
         """
         response = self._requests_session.get(url)
-        if not os.path.exists('images'):
-            os.makedirs('images')
-        with open('images/' + secrets.token_hex(nbytes=16) + os.path.splitext(url)[1], 'wb') as file_image:
+        if not os.path.exists("images"):
+            os.makedirs("images")
+        with open(
+            f"images/{secrets.token_hex(nbytes=16)}{os.path.splitext(url)[1]}", "wb"
+        ) as file_image:
             file_image.write(response.content)
         return file_image
 
@@ -39,8 +49,7 @@ class MireaParser():
             url (str): ссылка на страницу
         """
         response_text = self._requests_session.get(url).text
-        html = bs4(response_text, 'lxml')
-        return html
+        return bs4(response_text, "lxml")
 
     def _get_image(self, url: str) -> str:
         image = self._download_image(url)

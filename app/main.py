@@ -1,8 +1,15 @@
-import schedule
+import logging
 import time
-import sentry_sdk
-from news_parser import NewsParser
+
+import schedule
 from config import get_settings
+from news_parser import NewsParser
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 
 def parse(api_url: str, api_token: str):
@@ -10,13 +17,10 @@ def parse(api_url: str, api_token: str):
     parser.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     settings = get_settings()
-
-    if settings.sentry_dsn != "" and settings.sentry_dsn is not None:
-        sentry_sdk.init(settings.sentry_dsn, traces_sample_rate=1.0)
-
-    schedule.every(1).minutes.do(parse, settings.api_url, settings.api_token)
+    parse(settings.API_URL, settings.API_TOKEN)
+    schedule.every(1).minutes.do(parse, settings.API_URL, settings.API_TOKEN)
 
     while True:
         schedule.run_pending()
