@@ -20,8 +20,10 @@ def parse(api_url: str, api_token: str):
 if __name__ == "__main__":
     settings = get_settings()
     parse(settings.API_URL, settings.API_TOKEN)
-    schedule.every(1).minutes.do(parse, settings.API_URL, settings.API_TOKEN)
+    
+    if settings.USE_EMBEDDED_SCEDULER:
+        schedule.every(1).minutes.do(parse, settings.API_URL, settings.API_TOKEN)
 
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+        while True:
+            schedule.run_pending()
+            time.sleep(1)

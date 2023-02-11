@@ -104,7 +104,6 @@ class NewsParser(MireaParser):
                 self.MIREA_URL + detail_page_url
             )
 
-            print("Latest news: ", latest_news)
             # Если новость уже есть в базе, то завершаем парсинг на этой странице
             if len(latest_news) > 0 and self.__is_news_exist(latest_news, title, text):
                 return True
@@ -139,8 +138,6 @@ class NewsParser(MireaParser):
             news_item["attributes"]["title"].lower().replace(" ", "")
             for news_item in latest_news
         ]:
-            logger.info("Новость уже есть в базе")
-            logger.info("Новость: ", title)
             return True
 
         def remove_html_tags(text_with_tags: str) -> str:
@@ -152,8 +149,6 @@ class NewsParser(MireaParser):
         doc2 = nlp(remove_html_tags(latest_news[0]["attributes"]["text"]))
         
         if doc1.similarity(doc2) > 0.92:
-            logger.info("Новость уже есть в базе")
-            logger.info("Новость: ", title)
             return True
 
         list_matchers = [
