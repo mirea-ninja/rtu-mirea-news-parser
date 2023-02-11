@@ -6,11 +6,10 @@ import time
 from datetime import datetime
 from typing import Any
 
-import nltk
+import spacy
 from mirea_parser import MireaParser
 
-nltk.download("stopwords")
-nltk.download("punkt")
+nlp = spacy.load("ru_core_news_md")
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +104,7 @@ class NewsParser(MireaParser):
                 self.MIREA_URL + detail_page_url
             )
 
+            print("Latest news: ", latest_news)
             # Если новость уже есть в базе, то завершаем парсинг на этой странице
             if len(latest_news) > 0 and self.__is_news_exist(latest_news, title, text):
                 return True
@@ -139,31 +139,22 @@ class NewsParser(MireaParser):
             news_item["attributes"]["title"].lower().replace(" ", "")
             for news_item in latest_news
         ]:
+            logger.info("Новость уже есть в базе")
+            logger.info("Новость: ", title)
             return True
 
         def remove_html_tags(text_with_tags: str) -> str:
             """Удаление html тегов из текста"""
             return re.sub("<[^<]+?>", "", text_with_tags)
 
-        stop_words = set(nltk.corpus.stopwords.words("russian"))
-        word_tokens = nltk.word_tokenize(remove_html_tags(text))
-
-        filtered_sentence = [
-            w for w in word_tokens if w not in stop_words and w.isalpha()
-        ]
-
-        for news_item in latest_news:
-            news_item_text = remove_html_tags(news_item["attributes"]["text"])
-            news_item_tokens = nltk.word_tokenize(news_item_text)
-            news_item_filtered_sentence = [
-                w for w in news_item_tokens if w not in stop_words and w.isalpha()
-            ]
-
-            if (
-                len(set(filtered_sentence).intersection(news_item_filtered_sentence))
-                > 1
-            ):
-                return True
+        # Проверка на схожесть текста с помощью Spacy
+        doc1 = nlp(remove_html_tags(text))
+        doc2 = nlp(remove_html_tags(latest_news[0]["attributes"]["text"]))
+        
+        if doc1.similarity(doc2) > 0.92:
+            logger.info("Новость уже есть в базе")
+            logger.info("Новость: ", title)
+            return True
 
         list_matchers = [
             difflib.SequenceMatcher(
