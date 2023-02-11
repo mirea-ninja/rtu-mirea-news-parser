@@ -9,6 +9,6 @@
 
 ## Установка и запуск
 1. Клонируйте репозиторий.
-2. Переименуйте файл переменных среды `.env.example` в `.env` и укажите ваш API URL и сгенерированный токен, пример - https://github.com/Ninja-Official/rtu-mirea-news-parser/blob/parser-strapi/.env.example. Если вам не нужен Sentry, просто не указывайте его.
+2. Переименуйте файл переменных среды `.env.example` в `.env`, измените `.env` файл.
 3. `docker build -t mirea_news_parser .`
 4. `docker run mirea_news_parser --env-file .\.env`
